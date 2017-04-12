@@ -56,7 +56,7 @@ rfc_clf = rfc(n_estimators=1000)
 rfc_clf.fit(train_df_vector, train_df_target)
 voting_prediction = rfc_clf.predict_proba(test_df_vector)
 
-print("Time for the Voting Classifier to train and predict on the testing data subset is := %.2f" % (time.time() -
+print("Time for the Random Forest Classifier to train and predict on the testing data is := %.2f" % (time.time() -
                                                                                                      start_time))
 
 csv_file = open("submissions.csv", 'w')
