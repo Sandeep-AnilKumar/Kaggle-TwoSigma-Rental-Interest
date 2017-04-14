@@ -152,13 +152,16 @@ test_df_vector[categorical_columns] = test_df_vector[categorical_columns].apply(
 test_df_ids = list(test_df['listing_id'])
 print("Done with testing data")
 
-estimator = rfc(n_estimators=1000)
-n_estimators = np.arange(10,10000,1)
+estimator = rfc()
+param_grid = {"n_estimators": [10, 20, 50, 80, 100, 200, 250, 300, 500, 600, 900, 1000, 2500, 5000, 7500, 10000],
+              "criterion": ["gini", "entropy"], "max_features": [3, 5],"max_depth": [10, 20],
+              "min_samples_split": [2, 4], "bootstrap": [True, False]}
+
 cv = ShuffleSplit(n_splits=10, test_size=0.2, random_state=0)
-classifier = GridSearchCV(estimator=estimator, cv=cv, param_grid=dict(n_estimators=n_estimators))
+classifier = GridSearchCV(estimator=estimator, cv=cv, param_grid=param_grid)
 classifier.fit(x_train, y_train)
 
-print "best n_estimators := " + str(classifier.best_estimator_.n_estimators)
+print "best n_estimators := " + str(classifier.best_params_)
 #
 rfc_clf = rfc(n_estimators=classifier.best_estimator_.n_estimators)
 rfc_clf.fit(Y, train_df_target)
