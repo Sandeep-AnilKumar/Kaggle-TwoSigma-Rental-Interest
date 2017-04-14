@@ -3,7 +3,7 @@ In this competition, you will predict how popular an apartment rental listing is
 
 The target variable, interest_level, is defined by the number of inquiries a listing has in the duration that the listing was live on the site. 
 
-##File descriptions
+## File descriptions
 
 train.json - the training set
 test.json - the test set
