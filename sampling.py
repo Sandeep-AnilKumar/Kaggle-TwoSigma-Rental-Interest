@@ -5,9 +5,7 @@ from sklearn.ensemble import RandomForestClassifier as rfc
 import numpy as np
 from nltk.stem import PorterStemmer
 import re
-from sklearn.model_selection import ShuffleSplit
-from sklearn.model_selection import GridSearchCV
-from sklearn.model_selection import train_test_split
+import xgboost as xgb
 
 np.seterr(divide='ignore', invalid='ignore')
 stemmer = PorterStemmer()
@@ -73,9 +71,9 @@ def add_test_features(fe):
 fea_list = train_df_total.index.values.tolist()
 
 #print train_df_total.loc[10000, "features"]
-# for fea_l in fea_list:
-#     #print fea_l
-#     add_features(fea_l)
+for fea_l in fea_list:
+    #print fea_l
+    add_features(fea_l)
 
 #print train_df_total.loc[10000, ["elev", "dog", "cat", "fit", "renov"]]
 
@@ -104,10 +102,6 @@ train_df_vector[categorical_columns] = train_df_vector[categorical_columns].appl
 train_df_target = train_df_total.loc[:, 'interest_level']
 print("Done with training data")
 
-#X_train, X_test, y_train, y_test = train_test_split(train_df_total, train_df_target, test_size=0.2, random_state=0)
-train = train_df_vector.sample(frac=0.8,random_state=200)
-test = train_df_vector.drop(train.index)
-
 test_df = pd.read_json('test.json')
 for feature in features:
     test_df[feature] = 0
@@ -115,9 +109,9 @@ for feature in features:
 fea_list = test_df.index.values.tolist()
 
 #print train_df_total.loc[10000, "features"]
-# for fea_l in fea_list:
-#     #print fea_l
-#     add_test_features(fea_l)
+for fea_l in fea_list:
+    #print fea_l
+    add_test_features(fea_l)
 
 #print train_df_total.loc[10000, ["elev", "dog", "cat", "fit", "renov"]]
 
@@ -145,24 +139,35 @@ test_df_vector[categorical_columns] = test_df_vector[categorical_columns].apply(
 
 test_df_ids = list(test_df['listing_id'])
 print("Done with testing data")
+#
+# param = dict()
+# param['objective'] = 'multi:softprob'
+# param['max_depth'] = 6
+# param['silent'] = False
+# param['num_class'] = 3
+# param['eval_metric'] = "mlogloss"
+# param['min_child_weight'] = 1
+# param['subsample'] = 0.7
+# param['colsample_bylevel'] = 0.7
+# param['seed'] = 350
+# param['n_estimators'] = 2000
 
-estimator = rfc(n_estimators=1000)
-gammas = np.logspace(-6, -1, 10)
-cv = ShuffleSplit(n_splits=10, test_size=0.2, random_state=0)
-classifier = GridSearchCV(estimator=estimator, cv=cv, param_grid=dict(gamma=gammas))
-classifier.fit(train_df_vector, train_df_target)
+# plst = list(param.items())
 
-voting_prediction = classifier.predict_proba(test_df_vector)
+reg = xgb.XGBClassifier(objective='multi:softprob', max_depth=6, silent=False, min_child_weight=1, subsample=0.7,
+                        colsample_bylevel=0.7, seed=312, n_estimators=2000)
+reg.fit(train_df_vector, train_df_target)
+predict = reg.predict_proba(test_df_vector)
 
-print("Time for the Random Forest Classifier to train and predict on the testing data is := %.2f" % (time.time() -
+print("Time for the XGBoost Classifier to train and predict on the testing data is := %.2f" % (time.time() -
                                                                                                      start_time))
 
-csv_file = open("submissions_new.csv", 'w')
+csv_file = open("submissions_new_xgboost.csv", 'w')
 wr = csv.writer(csv_file, delimiter=',', quoting=csv.QUOTE_NONE)
 wr.writerow(['listing_id', 'high', 'medium', 'low'])
 
 for index in range(0, len(test_df_ids)):
-    wr.writerow([test_df_ids[index], voting_prediction[index][0], voting_prediction[index][2], voting_prediction[index][1]])
+    wr.writerow([test_df_ids[index], predict[index][0], predict[index][2], predict[index][1]])
     index += 1
 
 print("Done with predicting Interest Levels for the test data")
